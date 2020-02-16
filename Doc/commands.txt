@@ -1,0 +1,4 @@
+
+Build:
+
+cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATION="LoRaMac" -DSUB_PROJECT="classA" -DACTIVE_REGION="LORAMAC_REGION_AU915" -DBOARD="B-L072Z-LRWAN1" -DREGION_AU915="ON" ..
