@@ -24,66 +24,57 @@
 /*! \file classA/B-L072Z-LRWAN1/main.c */
 
 #include <stdio.h>
+#include <string.h>
 #include "utilities.h"
 #include "board.h"
 #include "gpio.h"
 #include "LoRaMac.h"
 #include "Commissioning.h"
 #include "NvmCtxMgmt.h"
-
-#ifndef ACTIVE_REGION
-
-#warning "No active region defined, LORAMAC_REGION_EU868 will be used as default."
-
-#define ACTIVE_REGION LORAMAC_REGION_AU915
-
-#endif
+#include "LoRaMacTest.h"
 
 /*!
  * Defines the application data transmission duty cycle. 5s, value in [ms].
  */
-#define APP_TX_DUTYCYCLE                            30000
+#define APP_TX_DUTYCYCLE             30000
 
 /*!
  * Defines a random delay for application data transmission duty cycle. 1s,
  * value in [ms].
  */
-#define APP_TX_DUTYCYCLE_RND                        1000
+#define APP_TX_DUTYCYCLE_RND         1000
 
 /*!
  * Default datarate
  */
-#define LORAWAN_DEFAULT_DATARATE                    DR_0
+#define LORAWAN_DEFAULT_DATARATE     DR_2
 
 /*!
  * LoRaWAN confirmed messages
  */
-#define LORAWAN_CONFIRMED_MSG_ON                    false
+#define LORAWAN_CONFIRMED_MSG_ON     false
+
+/*!
+ * LoRaWAN sub-band
+ */
+#define SUBBAND                      1
 
 /*!
  * LoRaWAN Adaptive Data Rate
  *
  * \remark Please note that when ADR is enabled the end-device should be static
  */
-#define LORAWAN_ADR_ON                              1
-
-#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
-
-#include "LoRaMacTest.h"
-
-/*!
- * LoRaWAN ETSI duty cycle control enable/disable
- *
- * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
- */
-#define LORAWAN_DUTYCYCLE_ON                        true
-
-#endif
+#define LORAWAN_ADR_ON               1
 
 /*!
  * LoRaWAN application port
  */
-#define LORAWAN_APP_PORT                            2
+#define LORAWAN_APP_PORT             2
+
+/*!
+ * LoRaWAN ETSI duty cycle control enable/disable
+ */
+#define LORAWAN_DUTYCYCLE_ON         false
 
 static uint8_t DevEui[] = LORAWAN_DEVICE_EUI;
 static uint8_t JoinEui[] = LORAWAN_JOIN_EUI;
@@ -356,8 +347,10 @@ static void PrepareTxFrame( uint8_t port )
     {
     case 2:
         {
-            AppDataSizeBackup = AppDataSize = 1;
-            AppDataBuffer[0] = AppLedStateOn;
+            AppDataSizeBackup = AppDataSize = 3;
+            AppDataBuffer[0] = 0x5A; // Device type
+            AppDataBuffer[1] = 0x19; // temperature
+            AppDataBuffer[2] = 0x41; // humidity
         }
         break;
     case 224:
@@ -547,13 +540,13 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
     printf( "\r\n###### ===== UPLINK FRAME %lu ==== ######\r\n", mcpsConfirm->UpLinkCounter );
     printf( "\r\n" );
 
-    printf( "CLASS       : %c\r\n", "ABC"[mibReq.Param.Class] );
-    printf( "\r\n" );
+    printf( "CLASS        : %c\r\n", "ABC"[mibReq.Param.Class] );
+    // printf( "\r\n" );
     printf( "TX PORT     : %d\r\n", AppData.Port );
 
     if( AppData.BufferSize != 0 )
     {
-        printf( "TX DATA     : " );
+        printf( "MSG TYPE    : " );
         if( AppData.MsgType == LORAMAC_HANDLER_CONFIRMED_MSG )
         {
             printf( "CONFIRMED - %s\r\n", ( mcpsConfirm->AckReceived != 0 ) ? "ACK" : "NACK" );
@@ -562,6 +555,7 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
         {
             printf( "UNCONFIRMED\r\n" );
         }
+        printf( "TX DATA     : " );
         PrintHexBuffer( AppData.Buffer, AppData.BufferSize );
     }
 
@@ -571,30 +565,18 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
     mibGet.Type  = MIB_CHANNELS;
     if( LoRaMacMibGetRequestConfirm( &mibGet ) == LORAMAC_STATUS_OK )
     {
-        printf( "U/L FREQ    : %lu\r\n", mibGet.Param.ChannelList[mcpsConfirm->Channel].Frequency );
+        printf( "U/L FREQ      : %lu\r\n", mibGet.Param.ChannelList[mcpsConfirm->Channel].Frequency );
     }
 
     printf( "TX POWER    : %d\r\n", mcpsConfirm->TxPower );
+
+    printf( "SUB-BAND       : %d\r\n", SUBBAND );
 
     mibGet.Type  = MIB_CHANNELS_MASK;
     if( LoRaMacMibGetRequestConfirm( &mibGet ) == LORAMAC_STATUS_OK )
     {
         printf("CHANNEL MASK: ");
-#if defined( REGION_AS923 ) || defined( REGION_CN779 ) || \
-    defined( REGION_EU868 ) || defined( REGION_IN865 ) || \
-    defined( REGION_KR920 ) || defined( REGION_EU433 ) || \
-    defined( REGION_RU864 )
-
-        for( uint8_t i = 0; i < 1; i++)
-
-#elif defined( REGION_AU915 ) || defined( REGION_US915 ) || defined( REGION_CN470 )
-
         for( uint8_t i = 0; i < 5; i++)
-#else
-
-#error "Please define a region in the compiler options."
-
-#endif
         {
             printf("%04X ", mibGet.Param.ChannelsMask[i] );
         }
@@ -929,6 +911,89 @@ void OnMacProcessNotify( void )
     IsMacProcessPending = 1;
 }
 
+/*!
+ * \brief   Set the range of frequencies used by the radio
+ *
+ * \param   [IN] sub-band - indicates the sub-band to be used
+ *							 0 : all 64 frequencies
+ *							 1-8 : 8 possible sub-bands
+ */
+void lora_set_sub_band(uint8_t subBand) {
+  MibRequestConfirm_t mib;
+  uint16_t gatewayChannelsMask[6] = {0};
+
+  switch (subBand) {
+    case 0: {
+            // enable all channels
+            uint16_t mask[6] = { 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x00FF, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 1: {
+            // 0001 0000 0000 0000 00FF - sub band 1
+            uint16_t mask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0001, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 2: {
+            // 0002 0000 0000 0000 FF00 - sub band 2
+            uint16_t mask[6] = { 0xFF00, 0x0000, 0x0000, 0x0000, 0x0002, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 3: {
+            // 0004 0000 0000 00FF 0000 - sub band 3
+            uint16_t mask[6] = { 0x0000, 0x00FF, 0x0000, 0x0000, 0x0004, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 4: {
+            // 0008 0000 0000 FF00 0000 - sub band 4
+            uint16_t mask[6] = { 0x0000, 0xFF00, 0x0000, 0x0000, 0x0008, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 5: {
+            // 0100 0000 00FF 0000 0000 - sub band 5
+            uint16_t mask[6] = { 0x0000, 0x0000, 0x00FF, 0x0000, 0x0100, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 6: {
+            // 0200 0000 FF00 0000 0000 - sub band 6
+            uint16_t mask[6] = { 0x0000, 0x0000, 0xFF00, 0x0000, 0x0200, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 7: {
+            // 0400 00FF 0000 0000 0000 - sub band 7
+            uint16_t mask[6] = { 0x0000, 0x0000, 0x0000, 0x00FF, 0x0400, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    case 8: {
+            // 0800 FF00 0000 0000 0000 - sub band 8
+            uint16_t mask[6] = { 0x0000, 0x0000, 0x0000, 0xFF00, 0x0800, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+    }
+    default: {
+			// 0001 0000 0000 0000 00FF - sub band 1
+            uint16_t mask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0001, 0x0000 };
+            memcpy(gatewayChannelsMask, mask, sizeof(mask)+1);
+            break;
+		}
+  }
+
+  mib.Type = MIB_CHANNELS_DEFAULT_MASK;
+  mib.Param.ChannelsDefaultMask = gatewayChannelsMask;
+  LoRaMacMibSetRequestConfirm( &mib );
+
+  mib.Type = MIB_CHANNELS_MASK;
+  mib.Param.ChannelsMask = gatewayChannelsMask;
+  LoRaMacMibSetRequestConfirm( &mib );
+}
+
 /**
  * Main application entry point.
  */
@@ -955,7 +1020,7 @@ int main( void )
 
     DeviceState = DEVICE_STATE_RESTORE;
 
-    printf( "###### ===== ClassA demo application v1.0.RC1 ==== ######\r\n\r\n" );
+    printf( "###### EELXXXX - IoT LoRa ######\r\n\r\n" );
 
     while( 1 )
     {
@@ -1066,6 +1131,8 @@ int main( void )
                 mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
                 LoRaMacMibSetRequestConfirm( &mibReq );
 
+                lora_set_sub_band(SUBBAND);
+
 #if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
                 LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 #endif
@@ -1094,38 +1161,38 @@ int main( void )
             }
             case DEVICE_STATE_JOIN:
             {
-                printf( "DevEui      : %02X", DevEui[0] );
+                printf( "DevEui: %02X", DevEui[0] );
                 for( int i = 1; i < 8; i++ )
                 {
-                    printf( "-%02X", DevEui[i] );
+                    printf( "%02X", DevEui[i] );
                 }
                 printf( "\r\n" );
-                printf( "AppEui      : %02X", JoinEui[0] );
+                printf( "AppEui: %02X", JoinEui[0] );
                 for( int i = 1; i < 8; i++ )
                 {
-                    printf( "-%02X", JoinEui[i] );
+                    printf( "%02X", JoinEui[i] );
                 }
                 printf( "\r\n" );
-                printf( "AppKey      : %02X", NwkKey[0] );
+                printf( "AppKey: %02X", NwkKey[0] );
                 for( int i = 1; i < 16; i++ )
                 {
-                    printf( " %02X", NwkKey[i] );
+                    printf( "%02X", NwkKey[i] );
                 }
                 printf( "\n\r\n" );
 #if( OVER_THE_AIR_ACTIVATION == 0 )
                 printf( "###### ===== JOINED ==== ######\r\n" );
                 printf( "\r\nABP\r\n\r\n" );
-                printf( "DevAddr     : %08lX\r\n", DevAddr );
-                printf( "NwkSKey     : %02X", FNwkSIntKey[0] );
+                printf( "DevAddr: %08lX\r\n", DevAddr );
+                printf( "NwkSKey: %02X", FNwkSIntKey[0] );
                 for( int i = 1; i < 16; i++ )
                 {
-                    printf( " %02X", FNwkSIntKey[i] );
+                    printf( "%02X", FNwkSIntKey[i] );
                 }
                 printf( "\r\n" );
-                printf( "AppSKey     : %02X", AppSKey[0] );
+                printf( "AppSKey: %02X", AppSKey[0] );
                 for( int i = 1; i < 16; i++ )
                 {
-                    printf( " %02X", AppSKey[i] );
+                    printf( "%02X", AppSKey[i] );
                 }
                 printf( "\n\r\n" );
 
