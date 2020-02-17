@@ -518,11 +518,11 @@ void RegionUS915InitDefaults( InitDefaultsParams_t* params )
             }
 
             // ChannelsMask
-            NvmCtx.ChannelsDefaultMask[0] = 0xFFFF;
-            NvmCtx.ChannelsDefaultMask[1] = 0xFFFF;
-            NvmCtx.ChannelsDefaultMask[2] = 0xFFFF;
-            NvmCtx.ChannelsDefaultMask[3] = 0xFFFF;
-            NvmCtx.ChannelsDefaultMask[4] = 0x00FF;
+            NvmCtx.ChannelsDefaultMask[0] = 0x00FF;
+            NvmCtx.ChannelsDefaultMask[1] = 0x0000;
+            NvmCtx.ChannelsDefaultMask[2] = 0x0000;
+            NvmCtx.ChannelsDefaultMask[3] = 0x0000;
+            NvmCtx.ChannelsDefaultMask[4] = 0x0001;
             NvmCtx.ChannelsDefaultMask[5] = 0x0000;
 
             // Copy channels default mask
