@@ -91,7 +91,7 @@
 /*!
  * App/Join server IEEE EUI (big endian)
  */
-#define LORAWAN_JOIN_EUI                                   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define LORAWAN_JOIN_EUI                                   { 0xab, 0xcd, 0xff, 0x00, 0x11, 0x22, 0x55, 0xaa }
 
 /*!
  * Application root key
@@ -123,7 +123,7 @@
  *         a pseudo random generator seeded with a value derived from
  *         BoardUniqueId value if LORAWAN_DEVICE_ADDRESS is set to 0
  */
-#define LORAWAN_DEVICE_ADDRESS                             ( uint32_t )0x26031DBD
+#define LORAWAN_DEVICE_ADDRESS                             ( uint32_t )0x26031DBE
 
 /*!
  * Forwarding Network session integrity key
