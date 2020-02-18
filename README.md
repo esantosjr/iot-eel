@@ -63,8 +63,10 @@ Before compiling the code, it is necessary to generate the Makefile using the **
 $ cd ith/
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATION="LoRaMac" -DSUB_PROJECT="classA" -DBOARD="B-L072Z-LRWAN1" ..
+$ cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATION="LoRaMac" -DSUB_PROJECT="classA" -DACTIVE_REGION="LORAMAC_REGION_AU915" -DBOARD="B-L072Z-LRWAN1" -DREGION_AU915="ON" ..
+
 ```
+*Selecting region. Possible values.*
 
 To compile:
 
@@ -77,3 +79,5 @@ The binary file will be located in ```src/apps/LoRaMac/LoRaMac-classA.bin```. To
 #### Flashing the binary
 
 #### Updating the code
+
+Possible parameters to configure:
