@@ -78,6 +78,8 @@ The binary file will be located in ```src/apps/LoRaMac/LoRaMac-classA.bin```. To
 
 #### Flashing the binary
 
+#### Visualizing the messages through Serial
+
 #### Updating the code
 
 Possible parameters to configure:
