@@ -362,7 +362,7 @@ static void PrepareTxFrame( uint8_t port )
             AppDataBuffer[1] = temperature >> 8;
             AppDataBuffer[2] = temperature & 0xFF;
 
-            AppDataBuffer[3] = randr( 0, 100 ); // humidity in %
+            AppDataBuffer[3] = randr( 0, 100 ); // humidity in percent %
             
             uint16_t pressure = randr( 260, 1260 ); // in hPa
             AppDataBuffer[4] = pressure >> 8;
