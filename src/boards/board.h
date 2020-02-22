@@ -106,6 +106,9 @@ void BoardLowPowerHandler( void );
  */
 uint8_t GetBoardPowerSource( void );
 
+void LpmEnterStopMode( void );
+void LpmExitStopMode( void );
+
 /*!
  * \brief Get the board version
  *
