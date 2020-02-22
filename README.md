@@ -23,13 +23,15 @@ Each `src/` subfolder contains a `CMakeLists.txt` file, where it is specified wh
 
 #### Prerequisites
 
+It is highly recommended to use Linux Ubuntu version 18.xx or 19.xx to compile the project.
+
 * **CMake >= 3.6**
 
 ```sh
 $ sudo apt-get install cmake
 ```
 
-* **GNU ARM-Toolchain**
+* **GNU ARM-Toolchain (tested with versions 6.3.1 and 7.3.1)**
 
 ```sh
 $ sudo apt-get install gcc-arm-none-eabi
@@ -41,32 +43,27 @@ $ sudo apt-get install gcc-arm-none-eabi
 $ sudo apt-get install make
 ```
 
-#### Available configuration options for generation files command
+#### Compiling the code
 
-There is the possibility to choose the application, target board and more options using the provided configuration options.
+Before compiling the code, it is necessary to generate the Makefile using the **cmake** tool. The sequence of commands below can be used with the project:
 
-These configuration options can be set through command line parameters.
-    
-##### Options available:
+```sh
+$ cd iot-eel/
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATION="LoRaMac" -DSUB_PROJECT="classA" -DACTIVE_REGION="LORAMAC_REGION_AU915" -DBOARD="B-L072Z-LRWAN1" -DREGION_AU915="ON" ..
+```
+There is the possibility to choose the application, target board and other options using some parameters when executing the CMake through command line.
 
-| Parameter          | Option values |
+**Parameters available:**
+
+| Parameter          | Possible values |
 | -------------      | :-------------|
 | `APPLICATION`      | **LoRaMac** |
 | `SUB_PROJECT`      | **classA**, **classC** |
 | `BOARD`            | **B-L072Z-LRWAN1** |
-
-#### Compiling the code
-
-Before compiling the code, it is necessary to generate the Makefile using the **cmake** tool. The example below considers the using of B-L072Z-LRWAN1 board:
-
-```sh
-$ cd ith/
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATION="LoRaMac" -DSUB_PROJECT="classA" -DACTIVE_REGION="LORAMAC_REGION_AU915" -DBOARD="B-L072Z-LRWAN1" -DREGION_AU915="ON" ..
-
-```
-*Selecting region. Possible values.*
+| `ACTIVE_REGION`    | **LORAMAC_REGION_AU915**, **LORAMAC_REGION_US915**, **LORAMAC_REGION_EU868** |
+| `REGION_XXXXX="ON"`| **REGION_AU915="ON"**, **REGION_US915="ON"**, **REGION_EU868="ON"** |
 
 To compile:
 
@@ -78,8 +75,35 @@ The binary file will be located in ```src/apps/LoRaMac/LoRaMac-classA.bin```. To
 
 #### Flashing the binary
 
+To upload the firmware to the board, just copy the binary file to the USB device created when the B-L072Z-LRWAN1 is connected to the computer.
+
+Using command line, this can the perform, inside the `build/` folder, as:
+
+```sh
+$ cp src/apps/LoRaMac/LoRaMac-classA.bin /media/$your-user-name$/DIS_L072Z/
+```
+
 #### Visualizing the messages through Serial
+
+The UART interface of the board is used to debug with prints. To access this interface, install the `Cutecom` program:
+
+```sh
+$ sudo apt-get install cutecom
+```
+
+To open the software:
+
+```sh
+$ sudo cutecom
+```
+The baudrate should be configured as 115200.
 
 #### Updating the code
 
-Possible parameters to configure:
+The main files the project contains that can be updated to change the code behavior, implement new functionalities or features are:
+
+* src/apps/LoRaMac/classA/B-L072Z-LRWAN1/**main.c**: project main application. This file contains some `#define` that can be used to change some configuration of the device. Not only this, but also has the functions of LoRaWAN parameters configuration, payload creation, stack callbacks and a FSM to handle the project routines.
+
+* src/apps/LoRaMac/classA/B-L072Z-LRWAN1/**Commissioning.h**: file where the device keys, address and activation mode (ABP or OTAA) can be configured.
+
+* src/boards/B-L072Z-LRWAN1/**board.c**: hardware interfaces and peripherals initializtion.
