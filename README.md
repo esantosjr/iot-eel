@@ -55,7 +55,7 @@ $ cmake -DCMAKE_TOOLCHAIN_FILE="cmake/toolchain-arm-none-eabi.cmake" -DAPPLICATI
 ```
 There is the possibility to choose the application, target board and other options using some parameters when executing the CMake through command line.
 
-**Parameters available:**
+Parameters available:
 
 | Parameter          | Possible values |
 | -------------      | :-------------|
