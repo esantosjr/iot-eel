@@ -32,6 +32,7 @@
 #include "Commissioning.h"
 #include "NvmCtxMgmt.h"
 #include "LoRaMacTest.h"
+#include "delay.h"
 
 /*!
  * Defines the application data transmission duty cycle. Value in [ms].
@@ -161,6 +162,11 @@ static bool NextTx = true;
  * \warning If variable is equal to 0 then the MCU can be set in low power mode
  */
 static uint8_t IsMacProcessPending = 0;
+
+/*
+ * Button objects
+ */
+extern Gpio_t BUTTON;
 
 /*!
  * Device states
@@ -995,6 +1001,21 @@ void lora_set_sub_band(uint8_t subBand) {
 }
 
 /**
+ * Callback called when user button (blue) is pressed.
+ */
+void onPressedButton() {
+    DeviceState = DEVICE_STATE_SEND;
+    NextTx = true;
+}
+
+/**
+ * Configure interrupt in user button (blue).
+ */
+void configure_interruption() {
+    GpioSetInterrupt( &BUTTON, IRQ_RISING_EDGE, IRQ_HIGH_PRIORITY, onPressedButton );
+}
+
+/**
  * Main application entry point.
  */
 int main( void )
@@ -1006,6 +1027,7 @@ int main( void )
 
     BoardInitMcu( );
     BoardInitPeriph( );
+    configure_interruption();
 
     macPrimitives.MacMcpsConfirm = McpsConfirm;
     macPrimitives.MacMcpsIndication = McpsIndication;
@@ -1251,10 +1273,12 @@ int main( void )
                 }
                 else
                 {
-                    // The MCU wakes up through events
-                    BoardLowPowerHandler( );
+                    // Enter in stop mode
+                    LpmEnterStopMode();
+                    LpmExitStopMode();
                 }
                 CRITICAL_SECTION_END( );
+
                 break;
             }
             default:
