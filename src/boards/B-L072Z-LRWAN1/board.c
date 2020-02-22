@@ -54,6 +54,11 @@ Gpio_t Led4;
  */
 Uart_t Uart2;
 
+/*
+ * Button objects
+ */
+Gpio_t BUTTON;
+
 /*!
  * Initializes the unused GPIO to a know status
  */
@@ -142,8 +147,6 @@ void BoardInitMcu( void )
 
         SystemClockConfig( );
 
-        UsbIsConnected = true;
-
         FifoInit( &Uart2.FifoTx, Uart2TxBuffer, UART2_FIFO_TX_SIZE );
         FifoInit( &Uart2.FifoRx, Uart2RxBuffer, UART2_FIFO_RX_SIZE );
         // Configure your terminal for 8 Bits data (7 data bit + 1 parity bit), no parity and no flow ctrl
@@ -157,12 +160,10 @@ void BoardInitMcu( void )
         GpioWrite( &Led3, 0 );
         GpioWrite( &Led4, 0 );
 
+        // User button
+        GpioInit( &BUTTON, BTN_1, PIN_INPUT, PIN_PUSH_PULL, PIN_PULL_UP, 1 );
+
         BoardUnusedIoInit( );
-        if( GetBoardPowerSource( ) == BATTERY_POWER )
-        {
-            // Disables OFF mode - Enables lowest power mode (STOP)
-            LpmSetOffMode( LPM_APPLI_ID, LPM_DISABLE );
-        }
     }
     else
     {
