@@ -353,10 +353,24 @@ static void PrepareTxFrame( uint8_t port )
     {
     case 2:
         {
-            AppDataSizeBackup = AppDataSize = 3;
+            // Random sensores values based on X-NUCLEO-IKS01A2 board
+            AppDataSizeBackup = AppDataSize = 6;
+
             AppDataBuffer[0] = 0x5A; // Device type
-            AppDataBuffer[1] = 0x19; // temperature
-            AppDataBuffer[2] = 0x41; // humidity
+
+            uint16_t temperature = randr( 223, 324 ); // in Kelvin
+            AppDataBuffer[1] = temperature >> 8;
+            AppDataBuffer[2] = temperature & 0xFF;
+
+            AppDataBuffer[3] = randr( 0, 100 ); // humidity in %
+            
+            uint16_t pressure = randr( 260, 1260 ); // in hPa
+            AppDataBuffer[4] = pressure >> 8;
+            AppDataBuffer[5] = pressure & 0xFF;
+
+            // AppDataBuffer[6] = 0x41; // accelerometer
+            // AppDataBuffer[7] = 0x41; // magnetometer
+            // AppDataBuffer[8] = 0x41; // gyroscope
         }
         break;
     case 224:
